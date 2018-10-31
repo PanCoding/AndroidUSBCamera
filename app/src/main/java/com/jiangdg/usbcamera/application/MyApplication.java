@@ -17,6 +17,5 @@ public class MyApplication extends Application {
         super.onCreate();
         mCrashHandler = CrashHandler.getInstance();
         mCrashHandler.init(getApplicationContext(), getClass());
-        
     }
 }
