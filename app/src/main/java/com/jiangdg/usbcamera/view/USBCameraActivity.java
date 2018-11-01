@@ -8,10 +8,14 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.Toast;
@@ -289,32 +293,33 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     }
 
     private void showResolutionListDialog() {
-//        AlertDialog.Builder builder = new AlertDialog.Builder(USBCameraActivity.this);
-//        View rootView = LayoutInflater.from(USBCameraActivity.this).inflate(R.layout.layout_dialog_list, null);
-//        ListView listView = (ListView) rootView.findViewById(R.id.listview_dialog);
-//        ArrayAdapter<String> adapter = new ArrayAdapter<String>(USBCameraActivity.this, android.R.layout.simple_list_item_1, getResolutionList());
-//        if (adapter != null) {
-//            listView.setAdapter(adapter);
-//        }
-//        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-//                if (mCameraHelper == null || !mCameraHelper.isCameraOpened())
-//                    return;
-//                final String resolution = (String) adapterView.getItemAtPosition(position);
-//                String[] tmp = resolution.split("x");
-//                if (tmp != null && tmp.length >= 2) {
-//                    int widht = Integer.valueOf(tmp[0]);
-//                    int height = Integer.valueOf(tmp[1]);
-//                    mCameraHelper.updateResolution(widht, height);
-//                }
-//                mDialog.dismiss();
-//            }
-//        });
-//
-//        builder.setView(rootView);
-//        mDialog = builder.create();
-//        mDialog.show();
+        AlertDialog.Builder builder = new AlertDialog.Builder(USBCameraActivity.this);
+        View rootView = LayoutInflater.from(USBCameraActivity.this).inflate(R.layout.layout_dialog_list, null);
+        ListView listView = (ListView) rootView.findViewById(R.id.listview_dialog);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(USBCameraActivity.this, android.R.layout.simple_list_item_1, getResolutionList());
+        if (adapter != null) {
+            listView.setAdapter(adapter);
+        }
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
+                    return;
+                }
+                final String resolution = (String) adapterView.getItemAtPosition(position);
+                String[] tmp = resolution.split("x");
+                if (tmp != null && tmp.length >= 2) {
+                    int widht = Integer.valueOf(tmp[0]);
+                    int height = Integer.valueOf(tmp[1]);
+                    mCameraHelper.updateResolution(widht, height);
+                }
+                mDialog.dismiss();
+            }
+        });
+
+        builder.setView(rootView);
+        mDialog = builder.create();
+        mDialog.show();
     }
 
     // example: {640x480,320x240,etc}
