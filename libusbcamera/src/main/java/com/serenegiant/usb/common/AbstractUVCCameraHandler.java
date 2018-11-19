@@ -308,6 +308,8 @@ public abstract class AbstractUVCCameraHandler extends Handler {
                 return camera.getBrightness();
             } else if (flag == UVCCamera.PU_CONTRAST) {
                 return camera.getContrast();
+            } else if (flag == UVCCamera.PU_SATURATION) {
+                return camera.getSaturation();
             }
         }
         throw new IllegalStateException();
@@ -324,6 +326,9 @@ public abstract class AbstractUVCCameraHandler extends Handler {
             } else if (flag == UVCCamera.PU_CONTRAST) {
                 camera.setContrast(value);
                 return camera.getContrast();
+            } else if (flag == UVCCamera.PU_SATURATION) {
+                camera.setSaturation(value);
+                return camera.getSaturation();
             }
         }
         throw new IllegalStateException();
@@ -340,6 +345,9 @@ public abstract class AbstractUVCCameraHandler extends Handler {
             } else if (flag == UVCCamera.PU_CONTRAST) {
                 camera.resetContrast();
                 return camera.getContrast();
+            } else if (flag == UVCCamera.PU_SATURATION) {
+                camera.resetSaturation();
+                return camera.getSaturation();
             }
         }
         throw new IllegalStateException();

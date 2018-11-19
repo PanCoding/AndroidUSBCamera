@@ -43,6 +43,7 @@ import butterknife.ButterKnife;
  */
 
 public class USBCameraActivity extends AppCompatActivity implements CameraDialog.CameraDialogParent, CameraViewInterface.Callback {
+
     private static final String TAG = "Debug";
     @BindView(R.id.camera_view)
     public View mTextureView;
@@ -108,7 +109,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                             e.printStackTrace();
                         }
                         Looper.prepare();
-                        if(mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+                        if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
                             mSeekBrightness.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_BRIGHTNESS));
                             mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
                         }
@@ -138,7 +139,6 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_YUYV);
         mCameraHelper.initUSBMonitor(this, mUVCCameraView, listener);
 
-
         mCameraHelper.setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
             @Override
             public void onPreviewResult(byte[] nv21Yuv) {
@@ -154,8 +154,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mSeekBrightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if(mCameraHelper != null && mCameraHelper.isCameraOpened()) {
-                    mCameraHelper.setModelValue(UVCCameraHelper.MODE_BRIGHTNESS,progress);
+                if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+                    mCameraHelper.setModelValue(UVCCameraHelper.MODE_BRIGHTNESS, progress);
                 }
             }
 
@@ -173,8 +173,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mSeekContrast.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if(mCameraHelper != null && mCameraHelper.isCameraOpened()) {
-                    mCameraHelper.setModelValue(UVCCameraHelper.MODE_CONTRAST,progress);
+                if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+                    mCameraHelper.setModelValue(UVCCameraHelper.MODE_CONTRAST, progress);
                 }
             }
 
@@ -227,7 +227,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                 mCameraHelper.capturePicture(picPath, new AbstractUVCCameraHandler.OnCaptureListener() {
                     @Override
                     public void onCaptureResult(String path) {
-                        Log.i(TAG,"save path：" + path);
+                        Log.i(TAG, "save path：" + path);
                     }
                 });
 
@@ -253,14 +253,14 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                                 FileUtils.putFileStream(data, offset, length);
                             }
                             // type = 0,aac audio stream
-                            if(type == 0) {
+                            if (type == 0) {
 
                             }
                         }
 
                         @Override
                         public void onRecordResult(String videoPath) {
-                            Log.i(TAG,"videoPath = "+videoPath);
+                            Log.i(TAG, "videoPath = " + videoPath);
                         }
                     });
                     // if you only want to push stream,please call like this
@@ -287,6 +287,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                     return super.onOptionsItemSelected(item);
                 }
                 mCameraHelper.startCameraFoucs();
+                break;
+            default:
                 break;
         }
         return super.onOptionsItemSelected(item);
