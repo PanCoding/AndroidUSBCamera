@@ -13,7 +13,6 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 
 public abstract class MediaEncoder implements Runnable {
-	private static final boolean DEBUG = true;	// TODO set false on release
 	private static final String TAG = "MediaEncoder";
 	public static final int TYPE_AUDIO = 0;		// 音频数据
 	public static final int TYPE_VIDEO = 1;		// 视频数据
@@ -95,8 +94,12 @@ public abstract class MediaEncoder implements Runnable {
 	};
 
     public MediaEncoder(final MediaMuxerWrapper muxer, final MediaEncoderListener listener) {
-    	if (listener == null) throw new NullPointerException("MediaEncoderListener is null");
-    	if (muxer == null) throw new NullPointerException("MediaMuxerWrapper is null");
+    	if (listener == null) {
+			throw new NullPointerException("MediaEncoderListener is null");
+		}
+    	if (muxer == null) {
+			throw new NullPointerException("MediaMuxerWrapper is null");
+		}
 		mWeakMuxer = new WeakReference<MediaMuxerWrapper>(muxer);
 		muxer.addEncoder(this);
 		mListener = listener;
@@ -155,8 +158,9 @@ public abstract class MediaEncoder implements Runnable {
         	synchronized (mSync) {
         		localRequestStop = mRequestStop;
         		localRequestDrain = (mRequestDrain > 0);
-        		if (localRequestDrain)
-        			mRequestDrain--;
+        		if (localRequestDrain) {
+					mRequestDrain--;
+				}
         	}
 	        if (localRequestStop) {
 	           	drain();
@@ -195,7 +199,6 @@ public abstract class MediaEncoder implements Runnable {
    /*package*/ abstract void prepare() throws IOException;
 
 	/*package*/ void startRecording() {
-   	if (DEBUG) Log.v(TAG, "startRecording");
 		synchronized (mSync) {
 			mIsCapturing = true;
 			mRequestStop = false;
@@ -208,7 +211,6 @@ public abstract class MediaEncoder implements Runnable {
     * the method to request stop encoding
     */
 	/*package*/ void stopRecording() {
-		if (DEBUG) Log.v(TAG, "stopRecording");
 		synchronized (mSync) {
 			if (!mIsCapturing || mRequestStop) {
 				return;
@@ -227,7 +229,6 @@ public abstract class MediaEncoder implements Runnable {
      * Release all releated objects
      */
     protected void release() {
-		if (DEBUG) Log.d(TAG, "release:");
 		try {
 			mListener.onStopped(this);
 		} catch (final Exception e) {
@@ -257,7 +258,6 @@ public abstract class MediaEncoder implements Runnable {
     }
 
     protected void signalEndOfInputStream() {
-		if (DEBUG) Log.d(TAG, "sending EOS to encoder");
         // signalEndOfInputStream is only avairable for video encoding with surface
         // and equivalent sending a empty buffer with BUFFER_FLAG_END_OF_STREAM flag.
 //		mMediaCodec.signalEndOfInputStream();	// API >= 18
@@ -272,7 +272,9 @@ public abstract class MediaEncoder implements Runnable {
      */
     @SuppressWarnings("deprecation")
 	protected void encode(final byte[] buffer, final int length, final long presentationTimeUs) {
-    	if (!mIsCapturing) return;
+    	if (!mIsCapturing) {
+			return;
+		}
     	int ix = 0, sz;
         final ByteBuffer[] inputBuffers = mMediaCodec.getInputBuffers();
         while (mIsCapturing && ix < length) {
@@ -290,7 +292,6 @@ public abstract class MediaEncoder implements Runnable {
 	            if (length <= 0) {
 	            	// send EOS
 	            	mIsEOS = true;
-	            	if (DEBUG) Log.i(TAG, "send BUFFER_FLAG_END_OF_STREAM");
 	            	mMediaCodec.queueInputBuffer(inputBufferIndex, 0, 0,
 	            		presentationTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
 		            break;
@@ -307,7 +308,9 @@ public abstract class MediaEncoder implements Runnable {
     }
 
 	protected void encode(ByteBuffer yuvBuffer,int len){
-		if (!mIsCapturing) return;
+		if (!mIsCapturing) {
+			return;
+		}
 		try {
 			if (lastPush == 0) {
 				lastPush = System.currentTimeMillis();
@@ -315,8 +318,9 @@ public abstract class MediaEncoder implements Runnable {
 			long time = System.currentTimeMillis() - lastPush;
 			if (time >= 0) {
 				time = millisPerframe - time;
-				if (time > 0)
+				if (time > 0) {
 					Thread.sleep(time / 2);
+				}
 			}
 			final ByteBuffer[] inputBuffers = mMediaCodec.getInputBuffers();
 			int bufferIndex = -1;
@@ -354,7 +358,9 @@ public abstract class MediaEncoder implements Runnable {
     @SuppressWarnings("deprecation")
 	protected void encode(final ByteBuffer buffer, final int length, final long presentationTimeUs) {
 //    	if (DEBUG) Log.v(TAG, "encode:buffer=" + buffer);
-    	if (!mIsCapturing) return;
+    	if (!mIsCapturing) {
+			return;
+		}
     	int ix = 0, sz;
         final ByteBuffer[] inputBuffers = mMediaCodec.getInputBuffers();
         while (mIsCapturing && ix < length) {
@@ -374,7 +380,6 @@ public abstract class MediaEncoder implements Runnable {
 	            if (length <= 0) {
 	            	// send EOS
 	            	mIsEOS = true;
-	            	if (DEBUG) Log.i(TAG, "send BUFFER_FLAG_END_OF_STREAM");
 	            	mMediaCodec.queueInputBuffer(inputBufferIndex, 0, 0,
 	            		presentationTimeUs, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
 		            break;
@@ -397,8 +402,9 @@ public abstract class MediaEncoder implements Runnable {
      */
     @SuppressWarnings("deprecation")
 	protected void drain() {
-    	if (mMediaCodec == null)
+    	if (mMediaCodec == null) {
 			return;
+		}
         ByteBuffer[] encoderOutputBuffers = mMediaCodec.getOutputBuffers();
         int encoderStatus, count = 0;
         final MediaMuxerWrapper muxer = mWeakMuxer.get();
@@ -415,8 +421,9 @@ public abstract class MediaEncoder implements Runnable {
 				// 等待 TIMEOUT_USEC x 5 = 50毫秒
 				// 如果还没有数据，终止循环
                 if (!mIsEOS) {
-                	if (++count > 5)
-                		break;
+                	if (++count > 5) {
+						break;
+					}
                 }
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
                 encoderOutputBuffers = mMediaCodec.getOutputBuffers();
@@ -429,16 +436,16 @@ public abstract class MediaEncoder implements Runnable {
                	mMuxerStarted = true;
                	if (!muxer.start()) {
                		synchronized (muxer) {
-	               		while (!muxer.isStarted())
-						try {
-							muxer.wait(100);
-						} catch (final InterruptedException e) {
-							break;
+	               		while (!muxer.isStarted()) {
+							try {
+								muxer.wait(100);
+							} catch (final InterruptedException e) {
+								break;
+							}
 						}
                		}
                	}
             } else if (encoderStatus < 0) {
-            	if (DEBUG) Log.w(TAG, "drain:unexpected result from encoder#dequeueOutputBuffer: " + encoderStatus);
             } else {
 				ByteBuffer encodedData;
 				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -456,7 +463,6 @@ public abstract class MediaEncoder implements Runnable {
 				// BUFFER_FLAG_CODEC_CONFIG标志
 				// BufferInfo清零
                 if ((mBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-					if (DEBUG) Log.d(TAG, "drain:BUFFER_FLAG_CODEC_CONFIG");
 					mBufferInfo.size = 0;
                 }
 				// BUFFER_FLAG_END_OF_STREAM标志
@@ -561,8 +567,9 @@ public abstract class MediaEncoder implements Runnable {
 
     protected long getPTSUs() {
 		long result = System.nanoTime() / 1000L;
-		if (result < prevOutputPTSUs)
+		if (result < prevOutputPTSUs) {
 			result = (prevOutputPTSUs - result) + result;
+		}
 		return result;
     }
 

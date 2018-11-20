@@ -34,11 +34,11 @@ import com.serenegiant.widget.IAspectRatioView;
  * if you set this view with in a FrameLayout and set property "android:layout_gravity="center",
  * you can show this view in the center of screen and keep the aspect ratio of content
  * XXX it is better that can set the aspect ratio as xml property
+ * @author sunpan
  */
 public class AspectRatioTextureView extends TextureView	// API >= 14
 	implements IAspectRatioView {
 
-	private static final boolean DEBUG = true;	// TODO set false on release
 	private static final String TAG = "AbstractCameraView";
 
     private double mRequestedAspect = -1.0;

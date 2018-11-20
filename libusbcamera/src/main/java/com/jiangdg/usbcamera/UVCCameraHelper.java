@@ -21,7 +21,9 @@ import java.util.List;
 /**
  * UVCCamera Helper class
  * <p>
- * Created by jiangdongguo on 2017/9/30.
+ *
+ * @author jiangdongguo
+ * @date 2017/9/30
  */
 
 public class UVCCameraHelper {
@@ -32,9 +34,13 @@ public class UVCCameraHelper {
     private static final String TAG = "UVCCameraHelper";
     private int previewWidth = 640;
     private int previewHeight = 480;
-    // 高分辨率YUV格式帧率较低
+    /**
+     * 高分辨率YUV格式帧率较低
+     */
     public static final int FRAME_FORMAT_YUYV = UVCCamera.FRAME_FORMAT_YUYV;
-    // 默认使用MJPEG
+    /**
+     * 默认使用MJPEG
+     */
     public static final int FRAME_FORMAT_MJPEG = UVCCamera.FRAME_FORMAT_MJPEG;
     public static final int MODE_BRIGHTNESS = UVCCamera.PU_BRIGHTNESS;
     public static final int MODE_CONTRAST = UVCCamera.PU_CONTRAST;
@@ -42,9 +48,13 @@ public class UVCCameraHelper {
     private int mFrameFormat = FRAME_FORMAT_MJPEG;
 
     private static UVCCameraHelper mCameraHelper;
-    // USB Manager
+    /**
+     * USB Manager
+     */
     private USBMonitor mUSBMonitor;
-    // Camera Handler
+    /**
+     * Camera Handler
+     */
     private UVCCameraHandler mCameraHandler;
     private USBMonitor.UsbControlBlock mCtrlBlock;
 
@@ -170,18 +180,15 @@ public class UVCCameraHelper {
         mCameraHandler = UVCCameraHandler.createHandler(mActivity, mCamView, 2,
                 previewWidth, previewHeight, mFrameFormat);
         openCamera(mCtrlBlock);
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // 休眠500ms，等待Camera创建完毕
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                // 开启预览
-                startPreview(mCamView);
+        new Thread(() -> {
+            // 休眠500ms，等待Camera创建完毕
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            // 开启预览
+            startPreview(mCamView);
         }).start();
     }
 
@@ -219,8 +226,9 @@ public class UVCCameraHelper {
             return;
         }
         int count = devList.size();
-        if (index >= count)
+        if (index >= count) {
             new IllegalArgumentException("index illegal,should be < devList.size()");
+        }
         if (mUSBMonitor != null) {
             mUSBMonitor.requestPermission(getUsbDeviceList().get(index));
         }

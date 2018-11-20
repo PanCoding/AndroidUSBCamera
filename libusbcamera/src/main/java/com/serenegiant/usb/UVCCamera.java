@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UVCCamera {
-	private static final boolean DEBUG = false;	// TODO set false when releasing
 	private static final String TAG = UVCCamera.class.getSimpleName();
 	private static final String DEFAULT_USBFS = "/dev/bus/usb";
 
@@ -262,7 +261,6 @@ public class UVCCamera {
 		mCurrentBandwidthFactor = 0;
 		mSupportedSize = null;
 		mCurrentSizeList = null;
-    	if (DEBUG) Log.v(TAG, "close:finished");
     }
 
 	public UsbDevice getDevice() {
@@ -334,12 +332,14 @@ public class UVCCamera {
 	 * @param bandwidthFactor
 	 */
 	public void setPreviewSize(final int width, final int height, final int min_fps, final int max_fps, final int frameFormat, final float bandwidthFactor) {
-		if ((width == 0) || (height == 0))
+		if ((width == 0) || (height == 0)) {
 			throw new IllegalArgumentException("invalid preview size");
+		}
 		if (mNativePtr != 0) {
 			final int result = nativeSetPreviewSize(mNativePtr, width, height, min_fps, max_fps, frameFormat, bandwidthFactor);
-			if (result != 0)
+			if (result != 0) {
 				throw new IllegalArgumentException("Failed to set preview size");
+			}
 			mCurrentFrameFormat = frameFormat;
 			mCurrentWidth = width;
 			mCurrentHeight = height;
@@ -354,22 +354,23 @@ public class UVCCamera {
 
 	public static List<Size> getSupportedSize(final int type, final String supportedSize) {
 		final List<Size> result = new ArrayList<Size>();
-		if (!TextUtils.isEmpty(supportedSize))
-		try {
-			final JSONObject json = new JSONObject(supportedSize);
-			final JSONArray formats = json.getJSONArray("formats");
-			final int format_nums = formats.length();
-			for (int i = 0; i < format_nums; i++) {
-				final JSONObject format = formats.getJSONObject(i);
-				if(format.has("type") && format.has("size")) {
-					final int format_type = format.getInt("type");
-					if ((format_type == type) || (type == -1)) {
-						addSize(format, format_type, 0, result);
+		if (!TextUtils.isEmpty(supportedSize)) {
+			try {
+				final JSONObject json = new JSONObject(supportedSize);
+				final JSONArray formats = json.getJSONArray("formats");
+				final int format_nums = formats.length();
+				for (int i = 0; i < format_nums; i++) {
+					final JSONObject format = formats.getJSONObject(i);
+					if(format.has("type") && format.has("size")) {
+						final int format_type = format.getInt("type");
+						if ((format_type == type) || (type == -1)) {
+							addSize(format, format_type, 0, result);
+						}
 					}
 				}
+			} catch (final JSONException e) {
+				e.printStackTrace();
 			}
-		} catch (final JSONException e) {
-			e.printStackTrace();
 		}
 		return result;
 	}
@@ -459,10 +460,11 @@ public class UVCCamera {
     // it is better to wait several hundreads millseconds.
 	public boolean checkSupportFlag(final long flag) {
     	updateCameraParams();
-    	if ((flag & 0x80000000) == 0x80000000)
-    		return ((mProcSupports & flag) == (flag & 0x7ffffffF));
-    	else
-    		return (mControlSupports & flag) == flag;
+    	if ((flag & 0x80000000) == 0x80000000) {
+			return ((mProcSupports & flag) == (flag & 0x7ffffffF));
+		} else {
+			return (mControlSupports & flag) == flag;
+		}
     }
 
 //================================================================================
@@ -542,8 +544,9 @@ public class UVCCamera {
 	public synchronized void setWhiteBlance(final int whiteBlance) {
     	if (mNativePtr != 0) {
  		   final float range = Math.abs(mWhiteBlanceMax - mWhiteBlanceMin);
- 		   if (range > 0)
- 			   nativeSetWhiteBlance(mNativePtr, (int)(whiteBlance / 100.f * range) + mWhiteBlanceMin);
+ 		   if (range > 0) {
+			   nativeSetWhiteBlance(mNativePtr, (int)(whiteBlance / 100.f * range) + mWhiteBlanceMin);
+		   }
     	}
     }
 
@@ -582,8 +585,9 @@ public class UVCCamera {
 	public synchronized void setBrightness(final int brightness) {
     	if (mNativePtr != 0) {
  		   final float range = Math.abs(mBrightnessMax - mBrightnessMin);
- 		   if (range > 0)
- 			   nativeSetBrightness(mNativePtr, (int)(brightness / 100.f * range) + mBrightnessMin);
+ 		   if (range > 0) {
+			   nativeSetBrightness(mNativePtr, (int)(brightness / 100.f * range) + mBrightnessMin);
+		   }
     	}
     }
 
@@ -624,8 +628,9 @@ public class UVCCamera {
     	if (mNativePtr != 0) {
     		nativeUpdateContrastLimit(mNativePtr);
 	    	final float range = Math.abs(mContrastMax - mContrastMin);
-	    	if (range > 0)
-	    		nativeSetContrast(mNativePtr, (int)(contrast / 100.f * range) + mContrastMin);
+	    	if (range > 0) {
+				nativeSetContrast(mNativePtr, (int)(contrast / 100.f * range) + mContrastMin);
+			}
     	}
     }
 
@@ -664,8 +669,9 @@ public class UVCCamera {
 	public synchronized void setSharpness(final int sharpness) {
     	if (mNativePtr != 0) {
  		   final float range = Math.abs(mSharpnessMax - mSharpnessMin);
- 		   if (range > 0)
- 			   nativeSetSharpness(mNativePtr, (int)(sharpness / 100.f * range) + mSharpnessMin);
+ 		   if (range > 0) {
+			   nativeSetSharpness(mNativePtr, (int)(sharpness / 100.f * range) + mSharpnessMin);
+		   }
     	}
     }
 
@@ -704,8 +710,9 @@ public class UVCCamera {
 	public synchronized void setGain(final int gain) {
     	if (mNativePtr != 0) {
  		   final float range = Math.abs(mGainMax - mGainMin);
- 		   if (range > 0)
- 			   nativeSetGain(mNativePtr, (int)(gain / 100.f * range) + mGainMin);
+ 		   if (range > 0) {
+			   nativeSetGain(mNativePtr, (int)(gain / 100.f * range) + mGainMin);
+		   }
     	}
     }
 
@@ -745,8 +752,9 @@ public class UVCCamera {
 	public synchronized void setGamma(final int gamma) {
     	if (mNativePtr != 0) {
  		   final float range = Math.abs(mGammaMax - mGammaMin);
- 		   if (range > 0)
- 			   nativeSetGamma(mNativePtr, (int)(gamma / 100.f * range) + mGammaMin);
+ 		   if (range > 0) {
+			   nativeSetGamma(mNativePtr, (int)(gamma / 100.f * range) + mGammaMin);
+		   }
     	}
     }
 
@@ -786,8 +794,9 @@ public class UVCCamera {
 	public synchronized void setSaturation(final int saturation) {
     	if (mNativePtr != 0) {
  		   final float range = Math.abs(mSaturationMax - mSaturationMin);
- 		   if (range > 0)
- 			   nativeSetSaturation(mNativePtr, (int)(saturation / 100.f * range) + mSaturationMin);
+ 		   if (range > 0) {
+			   nativeSetSaturation(mNativePtr, (int)(saturation / 100.f * range) + mSaturationMin);
+		   }
     	}
     }
 
@@ -920,10 +929,12 @@ public class UVCCamera {
     	if (mNativePtr != 0) {
     		if ((mControlSupports == 0) || (mProcSupports == 0)) {
         		// サポートしている機能フラグを取得
-    			if (mControlSupports == 0)
-    				mControlSupports = nativeGetCtrlSupports(mNativePtr);
-    			if (mProcSupports == 0)
-    				mProcSupports = nativeGetProcSupports(mNativePtr);
+    			if (mControlSupports == 0) {
+					mControlSupports = nativeGetCtrlSupports(mNativePtr);
+				}
+    			if (mProcSupports == 0) {
+					mProcSupports = nativeGetProcSupports(mNativePtr);
+				}
     	    	// 設定値を取得
     	    	if ((mControlSupports != 0) && (mProcSupports != 0)) {
 	    	    	nativeUpdateBrightnessLimit(mNativePtr);
@@ -937,20 +948,6 @@ public class UVCCamera {
 	    	    	nativeUpdateWhiteBlanceLimit(mNativePtr);
 	    	    	nativeUpdateFocusLimit(mNativePtr);
     	    	}
-    	    	if (DEBUG) {
-					dumpControls(mControlSupports);
-					dumpProc(mProcSupports);
-					Log.v(TAG, String.format("Brightness:min=%d,max=%d,def=%d", mBrightnessMin, mBrightnessMax, mBrightnessDef));
-					Log.v(TAG, String.format("Contrast:min=%d,max=%d,def=%d", mContrastMin, mContrastMax, mContrastDef));
-					Log.v(TAG, String.format("Sharpness:min=%d,max=%d,def=%d", mSharpnessMin, mSharpnessMax, mSharpnessDef));
-					Log.v(TAG, String.format("Gain:min=%d,max=%d,def=%d", mGainMin, mGainMax, mGainDef));
-					Log.v(TAG, String.format("Gamma:min=%d,max=%d,def=%d", mGammaMin, mGammaMax, mGammaDef));
-					Log.v(TAG, String.format("Saturation:min=%d,max=%d,def=%d", mSaturationMin, mSaturationMax, mSaturationDef));
-					Log.v(TAG, String.format("Hue:min=%d,max=%d,def=%d", mHueMin, mHueMax, mHueDef));
-					Log.v(TAG, String.format("Zoom:min=%d,max=%d,def=%d", mZoomMin, mZoomMax, mZoomDef));
-					Log.v(TAG, String.format("WhiteBlance:min=%d,max=%d,def=%d", mWhiteBlanceMin, mWhiteBlanceMax, mWhiteBlanceDef));
-					Log.v(TAG, String.format("Focus:min=%d,max=%d,def=%d", mFocusMin, mFocusMax, mFocusDef));
-				}
 			}
     	} else {
     		mControlSupports = mProcSupports = 0;
@@ -1067,8 +1064,9 @@ public class UVCCamera {
     public void startCapture(final Surface surface) {
     	if (mCtrlBlock != null && surface != null) {
     		nativeSetCaptureDisplay(mNativePtr, surface);
-    	} else
-    		throw new NullPointerException("startCapture");
+    	} else {
+			throw new NullPointerException("startCapture");
+		}
     }
 
     /**

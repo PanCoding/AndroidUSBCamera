@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncoder {
-	private static final boolean DEBUG = true;	// TODO set false on release
 	private static final String TAG = "MediaVideoBufferEncoder";
 
 	private static final String MIME_TYPE = "video/avc";
@@ -47,14 +46,15 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
 
 	public MediaVideoBufferEncoder(final MediaMuxerWrapper muxer, final int width, final int height, final MediaEncoderListener listener) {
 		super(muxer, listener);
-		if (DEBUG) Log.i(TAG, "MediaVideoEncoder: ");
 		mWidth = width;
 		mHeight = height;
 	}
 
 	public void encode(final ByteBuffer buffer) {
 		synchronized (mSync) {
-			if (!mIsCapturing || mRequestStop) return;
+			if (!mIsCapturing || mRequestStop) {
+				return;
+			}
 		}
 //		encode(buffer, buffer.capacity(), getPTSUs());
 		encode(buffer, buffer.capacity());
@@ -62,7 +62,6 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
 
 	@Override
 	protected void prepare() throws IOException {
-		if (DEBUG) Log.i(TAG, "prepare: ");
         mTrackIndex = -1;
         mMuxerStarted = mIsEOS = false;
 
@@ -71,14 +70,12 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
             Log.e(TAG, "Unable to find an appropriate codec for " + MIME_TYPE);
             return;
         }
-		if (DEBUG) Log.i(TAG, "selected codec: " + videoCodecInfo.getName());
 
         final MediaFormat format = MediaFormat.createVideoFormat(MIME_TYPE, mWidth, mHeight);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, mColorFormat);
         format.setInteger(MediaFormat.KEY_BIT_RATE, calcBitRate());
         format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 10);
-		if (DEBUG) Log.i(TAG, "format: " + format);
 
         mMediaCodec = MediaCodec.createEncoderByType(MIME_TYPE);
         mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
@@ -89,7 +86,6 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
 			mMediaCodec.setParameters(params);
 		}
-        if (DEBUG) Log.i(TAG, "prepare finishing");
         if (mListener != null) {
         	try {
         		mListener.onPrepared(this);
@@ -108,7 +104,6 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
 	// 选择第一个与制定MIME类型匹配的编码器
     @SuppressWarnings("deprecation")
 	protected final MediaCodecInfo selectVideoCodec(final String mimeType) {
-    	if (DEBUG) Log.v(TAG, "selectVideoCodec:");
 
     	// get the list of available codecs
         final int numCodecs = MediaCodecList.getCodecCount();
@@ -122,7 +117,6 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
             final String[] types = codecInfo.getSupportedTypes();
             for (int j = 0; j < types.length; j++) {
                 if (types[j].equalsIgnoreCase(mimeType)) {
-                	if (DEBUG) Log.i(TAG, "codec:" + codecInfo.getName() + ",MIME=" + types[j]);
             		final int format = selectColorFormat(codecInfo, mimeType);
                 	if (format > 0) {
                 		mColorFormat = format;
@@ -136,7 +130,6 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
 
     // 选择编码器支持的格式
     protected static final int selectColorFormat(final MediaCodecInfo codecInfo, final String mimeType) {
-		if (DEBUG) Log.i(TAG, "selectColorFormat: ");
     	int result = 0;
     	final MediaCodecInfo.CodecCapabilities caps;
     	try {
@@ -149,13 +142,15 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
         for (int i = 0; i < caps.colorFormats.length; i++) {
         	colorFormat = caps.colorFormats[i];
             if (isRecognizedViewoFormat(colorFormat)) {
-            	if (result == 0)
-            		result = colorFormat;
+            	if (result == 0) {
+					result = colorFormat;
+				}
                 break;
             }
         }
-        if (result == 0)
-        	Log.e(TAG, "couldn't find a good color format for " + codecInfo.getName() + " / " + mimeType);
+        if (result == 0) {
+			Log.e(TAG, "couldn't find a good color format for " + codecInfo.getName() + " / " + mimeType);
+		}
         return result;
     }
 
@@ -171,7 +166,6 @@ public class MediaVideoBufferEncoder extends MediaEncoder implements IVideoEncod
 	}
 
     private static final boolean isRecognizedViewoFormat(final int colorFormat) {
-		if (DEBUG) Log.i(TAG, "isRecognizedViewoFormat:colorFormat=" + colorFormat);
     	final int n = recognizedFormats != null ? recognizedFormats.length : 0;
     	for (int i = 0; i < n; i++) {
     		if (recognizedFormats[i] == colorFormat) {
