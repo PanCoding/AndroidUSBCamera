@@ -227,7 +227,7 @@ public class UVCCameraHelper {
         }
         int count = devList.size();
         if (index >= count) {
-            new IllegalArgumentException("index illegal,should be < devList.size()");
+            throw new IllegalArgumentException("index illegal,should be < devList.size()");
         }
         if (mUSBMonitor != null) {
             mUSBMonitor.requestPermission(getUsbDeviceList().get(index));
@@ -245,8 +245,9 @@ public class UVCCameraHelper {
     public List<UsbDevice> getUsbDeviceList() {
         List<DeviceFilter> deviceFilters = DeviceFilter
                 .getDeviceFilters(mActivity.getApplicationContext(), R.xml.device_filter);
-        if (mUSBMonitor == null || deviceFilters == null)
+        if (mUSBMonitor == null || deviceFilters == null) {
             return null;
+        }
         return mUSBMonitor.getDeviceList(deviceFilters.get(0));
     }
 
@@ -335,8 +336,9 @@ public class UVCCameraHelper {
     }
 
     public List<Size> getSupportedPreviewSizes() {
-        if (mCameraHandler == null)
+        if (mCameraHandler == null) {
             return null;
+        }
         return mCameraHandler.getSupportedPreviewSizes();
     }
 

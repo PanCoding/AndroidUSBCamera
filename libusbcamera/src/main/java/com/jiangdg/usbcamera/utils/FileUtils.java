@@ -9,7 +9,9 @@ import java.io.IOException;
 
 /** 创建文件
  *
- * Created by jiangdongguo on 2017/10/18.
+ *
+ * @author jiangdongguo
+ * @date 2017/10/18
  */
 
 public class FileUtils {
