@@ -18,7 +18,7 @@ android {
         }
     }
 
-    lintOptions{
+    lintOptions {
         disable "GoogleAppIndexingWarning"
     }
 
@@ -33,7 +33,7 @@ dependencies {
     androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation "com.android.support:appcompat-v7:'${supportLibVersion}'"
     testImplementation 'junit:junit:4.12'
     implementation project(':libusbcamera')
     implementation 'com.jakewharton:butterknife:8.8.1'
