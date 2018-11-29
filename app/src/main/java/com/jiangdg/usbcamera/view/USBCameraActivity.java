@@ -39,7 +39,9 @@ import butterknife.ButterKnife;
 /**
  * UVCCamera use demo
  * <p>
- * Created by jiangdongguo on 2017/9/30.
+ *
+ * @author jiangdongguo
+ * @date 2017/9/30
  */
 
 public class USBCameraActivity extends AppCompatActivity implements CameraDialog.CameraDialogParent, CameraViewInterface.Callback {

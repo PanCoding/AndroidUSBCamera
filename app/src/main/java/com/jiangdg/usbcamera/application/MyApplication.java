@@ -2,18 +2,18 @@ package com.jiangdg.usbcamera.application;
 
 import android.app.Application;
 
-/**全局类
+/**
+ * 全局类
+ * <p>
  *
- * Created by jianddongguo on 2017/7/20.
+ * @author jianddongguo
+ * @date 2017/7/20
  */
 
 public class MyApplication extends Application {
-//    private CrashHandler mCrashHandler;
 
     @Override
     public void onCreate() {
         super.onCreate();
-//        mCrashHandler = CrashHandler.getInstance();
-//        mCrashHandler.init(getApplicationContext(), getClass());
     }
 }
