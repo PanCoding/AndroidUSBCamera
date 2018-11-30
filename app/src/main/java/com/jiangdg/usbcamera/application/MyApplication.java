@@ -4,7 +4,6 @@ import android.app.Application;
 
 /**
  * 全局类
- * <p>
  *
  * @author jianddongguo
  * @date 2017/7/20
