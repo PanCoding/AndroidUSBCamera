@@ -102,21 +102,18 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                 showShortMsg("connecting");
                 // initialize seekbar
                 // need to wait UVCCamera initialize over
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Thread.sleep(2500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        Looper.prepare();
-                        if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
-                            mSeekBrightness.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_BRIGHTNESS));
-                            mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
-                        }
-                        Looper.loop();
+                new Thread(() -> {
+                    try {
+                        Thread.sleep(2500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
+                    Looper.prepare();
+                    if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+                        mSeekBrightness.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_BRIGHTNESS));
+                        mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
+                    }
+                    Looper.loop();
                 }).start();
             }
         }
@@ -141,11 +138,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_YUYV);
         mCameraHelper.initUSBMonitor(this, mUVCCameraView, listener);
 
-        mCameraHelper.setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
-            @Override
-            public void onPreviewResult(byte[] nv21Yuv) {
+        mCameraHelper.setOnPreviewFrameListener(nv21Yuv -> {
 
-            }
         });
     }
 
@@ -241,7 +235,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                 }
                 if (!mCameraHelper.isPushing()) {
                     String videoPath = UVCCameraHelper.ROOT_PATH + System.currentTimeMillis();
-                    FileUtils.createfile(FileUtils.ROOT_PATH + "test666.h264");
+                    FileUtils.createFile(FileUtils.ROOT_PATH + "test666.h264");
                     // if you want to record,please create RecordParams like this
                     RecordParams params = new RecordParams();
                     params.setRecordPath(videoPath);

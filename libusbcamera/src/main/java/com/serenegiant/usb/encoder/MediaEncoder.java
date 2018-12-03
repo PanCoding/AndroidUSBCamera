@@ -152,7 +152,7 @@ public abstract class MediaEncoder implements Runnable {
         boolean localRequestDrain;
 		boolean localIsNotExit;
 		// 创建h264
-		FileUtils.createfile(Environment.getExternalStorageDirectory().getAbsolutePath()+"/test222.h264");
+		FileUtils.createFile(Environment.getExternalStorageDirectory().getAbsolutePath()+"/test222.h264");
 
         while (isRunning) {
         	synchronized (mSync) {

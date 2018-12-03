@@ -19,7 +19,7 @@ public class FileUtils {
     private static BufferedOutputStream outputStream;
     public static String ROOT_PATH = Environment.getExternalStorageDirectory().getAbsolutePath()+File.separator;
 
-    public static void createfile(String path){
+    public static void createFile(String path){
         File file = new File(path);
         if(file.exists()){
             file.delete();
