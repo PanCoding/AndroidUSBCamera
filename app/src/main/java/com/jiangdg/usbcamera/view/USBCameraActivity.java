@@ -239,8 +239,10 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                     // if you want to record,please create RecordParams like this
                     RecordParams params = new RecordParams();
                     params.setRecordPath(videoPath);
-                    params.setRecordDuration(0);                        // 设置为0，不分割保存
-                    params.setVoiceClose(mSwitchVoice.isChecked());    // is close voice
+                    // 设置为0，不分割保存
+                    params.setRecordDuration(0);
+                    // is close voice
+                    params.setVoiceClose(mSwitchVoice.isChecked());
                     mCameraHelper.startPusher(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
                         @Override
                         public void onEncodeResult(byte[] data, int offset, int length, long timestamp, int type) {
