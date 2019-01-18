@@ -152,8 +152,9 @@ public class UVCCameraHelper {
     }
 
     public void createUVCCamera() {
-        if (mCamView == null)
+        if (mCamView == null) {
             throw new NullPointerException("CameraViewInterface cannot be null!");
+        }
 
         // release resources for initializing camera handler
         if (mCameraHandler != null) {
