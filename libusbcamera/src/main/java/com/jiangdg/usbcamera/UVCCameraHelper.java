@@ -27,13 +27,14 @@ import java.util.List;
  */
 
 public class UVCCameraHelper {
+
     public static final String ROOT_PATH = Environment.getExternalStorageDirectory().getAbsolutePath()
             + File.separator;
     public static final String SUFFIX_JPEG = ".jpg";
     public static final String SUFFIX_MP4 = ".mp4";
     private static final String TAG = "UVCCameraHelper";
-    private int previewWidth = 640;
-    private int previewHeight = 480;
+    private int previewWidth = UVCCamera.DEFAULT_PREVIEW_WIDTH;
+    private int previewHeight = UVCCamera.DEFAULT_PREVIEW_HEIGHT;
     /**
      * 高分辨率YUV格式帧率较低
      */
