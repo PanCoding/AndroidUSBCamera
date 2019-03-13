@@ -40,7 +40,7 @@ dependencies {
 }
 
 def MAVEN_LOCAL_PATH = 'http://101.132.126.255:8081/repository/gdt/'
-def ARTIFACT_ID = 'gdt-otgbase'
+def ARTIFACT_ID = 'gdt-otg-base'
 def VERSION_NAME = rootProject.versionName
 def GROUP_ID = 'gdt'
 def ACCOUNT = 'dev'
