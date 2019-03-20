@@ -13,7 +13,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.SeekBar;
@@ -23,6 +22,7 @@ import android.widget.Toast;
 import com.jiangdg.usbcamera.R;
 import com.jiangdg.usbcamera.UVCCameraHelper;
 import com.jiangdg.usbcamera.utils.FileUtils;
+import com.jiangdg.usbcamera.utils.MyThreadFactory;
 import com.serenegiant.usb.CameraDialog;
 import com.serenegiant.usb.Size;
 import com.serenegiant.usb.USBMonitor;
@@ -32,6 +32,9 @@ import com.serenegiant.usb.widget.CameraViewInterface;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -46,7 +49,8 @@ import butterknife.ButterKnife;
 
 public class USBCameraActivity extends AppCompatActivity implements CameraDialog.CameraDialogParent, CameraViewInterface.Callback {
 
-    private static final String TAG = "Debug";
+    private static final String TAG = USBCameraActivity.class.getSimpleName();
+
     @BindView(R.id.camera_view)
     public View mTextureView;
     @BindView(R.id.toolbar)
@@ -64,6 +68,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
 
     private boolean isRequest;
     private boolean isPreview;
+    private MyThreadFactory myThreadFactory = new MyThreadFactory(TAG);
+    private ThreadPoolExecutor mThreadPoolExecutor = new ThreadPoolExecutor(1, 1, 2, TimeUnit.SECONDS, new LinkedBlockingDeque<>(), myThreadFactory);
 
     private UVCCameraHelper.OnMyDevConnectListener listener = new UVCCameraHelper.OnMyDevConnectListener() {
 
@@ -102,7 +108,20 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                 showShortMsg("connecting");
                 // initialize seekbar
                 // need to wait UVCCamera initialize over
-                new Thread(() -> {
+//                new Thread(() -> {
+//                    try {
+//                        Thread.sleep(2500);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                    Looper.prepare();
+//                    if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+//                        mSeekBrightness.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_BRIGHTNESS));
+//                        mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
+//                    }
+//                    Looper.loop();
+//                }).start();
+                Runnable runnable = () -> {
                     try {
                         Thread.sleep(2500);
                     } catch (InterruptedException e) {
@@ -114,7 +133,9 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                         mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
                     }
                     Looper.loop();
-                }).start();
+                };
+                mThreadPoolExecutor.execute(runnable);
+
             }
         }
 
@@ -220,12 +241,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                 }
                 String picPath = UVCCameraHelper.ROOT_PATH + System.currentTimeMillis()
                         + UVCCameraHelper.SUFFIX_JPEG;
-                mCameraHelper.capturePicture(picPath, new AbstractUVCCameraHandler.OnCaptureListener() {
-                    @Override
-                    public void onCaptureResult(String path) {
-                        Log.i(TAG, "save path：" + path);
-                    }
-                });
+                mCameraHelper.capturePicture(picPath, path -> Log.i(TAG, "save path：" + path));
 
                 break;
             case R.id.menu_recording:
@@ -300,21 +316,18 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         if (adapter != null) {
             listView.setAdapter(adapter);
         }
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-                if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
-                    return;
-                }
-                final String resolution = (String) adapterView.getItemAtPosition(position);
-                String[] tmp = resolution.split("x");
-                if (tmp != null && tmp.length >= 2) {
-                    int widht = Integer.valueOf(tmp[0]);
-                    int height = Integer.valueOf(tmp[1]);
-                    mCameraHelper.updateResolution(widht, height);
-                }
-                mDialog.dismiss();
+        listView.setOnItemClickListener((adapterView, view, position, id) -> {
+            if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
+                return;
             }
+            final String resolution = (String) adapterView.getItemAtPosition(position);
+            String[] tmp = resolution.split("x");
+            if (tmp != null && tmp.length >= 2) {
+                int widht = Integer.valueOf(tmp[0]);
+                int height = Integer.valueOf(tmp[1]);
+                mCameraHelper.updateResolution(widht, height);
+            }
+            mDialog.dismiss();
         });
 
         builder.setView(rootView);
@@ -322,7 +335,10 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mDialog.show();
     }
 
-    // example: {640x480,320x240,etc}
+    /**
+     * 获取摄像头支持分辨率列表
+     * example: {640x480,320x240,etc}
+     */
     private List<String> getResolutionList() {
         List<Size> list = mCameraHelper.getSupportedPreviewSizes();
         List<String> resolutions = null;

@@ -20,6 +20,7 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
+import com.jiangdg.usbcamera.utils.MyThreadFactory;
 import com.serenegiant.usb.IFrameCallback;
 import com.serenegiant.usb.Size;
 import com.serenegiant.usb.USBMonitor;
@@ -48,6 +49,10 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Camera业务处理抽象类
@@ -56,8 +61,13 @@ public abstract class AbstractUVCCameraHandler extends Handler {
 
     private static final String TAG = "AbsUVCCameraHandler";
 
+    private static ThreadFactory threadFactory = new MyThreadFactory(TAG);
+    private static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(2, 2, 1, TimeUnit.SECONDS,
+            new LinkedBlockingDeque<>(), threadFactory);
 
-    // 对外回调接口
+    /**
+     * 对外回调接口
+     */
     public interface CameraCallback {
         public void onOpen();
 
@@ -661,8 +671,9 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         private H264EncodeConsumer mH264Consumer;
 
         public void handleStartPusher(RecordParams params) {
-            if ((mUVCCamera == null) || (mH264Consumer != null))
+            if ((mUVCCamera == null) || (mH264Consumer != null)) {
                 return;
+            }
 //			// 获取USB Camera预览数据
 //			mUVCCamera.setFrameCallback(mIFrameCallback, UVCCamera.PIXEL_FORMAT_NV21);
             // 初始化混合器
@@ -805,12 +816,19 @@ public abstract class AbstractUVCCameraHandler extends Handler {
                 // 捕获图片
                 if (isCaptureStill && !TextUtils.isEmpty(picPath)) {
                     isCaptureStill = false;
-                    new Thread(new Runnable() {
+//                    new Thread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            saveYuv2Jpeg(picPath, yuv);
+//                        }
+//                    }).start();
+                    Runnable runnable = new Runnable() {
                         @Override
                         public void run() {
                             saveYuv2Jpeg(picPath, yuv);
                         }
-                    }).start();
+                    };
+                    threadPoolExecutor.execute(runnable);
 
                     isCaptureStill = false;
                 }
@@ -896,7 +914,6 @@ public abstract class AbstractUVCCameraHandler extends Handler {
 
         // 获取支持的分辨率
         public List<Size> getSupportedSizes() {
-            //TODO 临时去除了 || !mIsPreviewing
             if ((mUVCCamera == null)) {
                 return null;
             }

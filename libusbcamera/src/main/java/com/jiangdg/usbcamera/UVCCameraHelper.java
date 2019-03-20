@@ -6,6 +6,7 @@ import android.hardware.usb.UsbDevice;
 import android.os.Environment;
 
 import com.jiangdg.libusbcamera.R;
+import com.jiangdg.usbcamera.utils.MyThreadFactory;
 import com.serenegiant.usb.DeviceFilter;
 import com.serenegiant.usb.Size;
 import com.serenegiant.usb.USBMonitor;
@@ -17,10 +18,13 @@ import com.serenegiant.usb.widget.CameraViewInterface;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * UVCCamera Helper class
- * <p>
  *
  * @author jiangdongguo
  * @date 2017/9/30
@@ -61,6 +65,10 @@ public class UVCCameraHelper {
 
     private Activity mActivity;
     private CameraViewInterface mCamView;
+
+    private ThreadFactory threadFactory = new MyThreadFactory(TAG);
+    private ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(2, 2, 1, TimeUnit.SECONDS,
+            new LinkedBlockingDeque<>(), threadFactory);
 
     private UVCCameraHelper() {
     }
@@ -117,7 +125,7 @@ public class UVCCameraHelper {
             public void onConnect(final UsbDevice device, USBMonitor.UsbControlBlock ctrlBlock, boolean createNew) {
                 mCtrlBlock = ctrlBlock;
                 openCamera(ctrlBlock);
-                new Thread(() -> {
+                Runnable runnable = () -> {
                     // 休眠500ms，等待Camera创建完毕
                     try {
                         Thread.sleep(500);
@@ -126,7 +134,18 @@ public class UVCCameraHelper {
                     }
                     // 开启预览
                     startPreview(mCamView);
-                }).start();
+                };
+                threadPoolExecutor.execute(runnable);
+//                new Thread(() -> {
+//                    // 休眠500ms，等待Camera创建完毕
+//                    try {
+//                        Thread.sleep(500);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                    // 开启预览
+//                    startPreview(mCamView);
+//                }).start();
                 if (listener != null) {
                     listener.onConnectDev(device, true);
                 }
@@ -179,7 +198,17 @@ public class UVCCameraHelper {
         mCameraHandler = UVCCameraHandler.createHandler(mActivity, mCamView, 2,
                 previewWidth, previewHeight, mFrameFormat);
         openCamera(mCtrlBlock);
-        new Thread(() -> {
+//        new Thread(() -> {
+//            // 休眠500ms，等待Camera创建完毕
+//            try {
+//                Thread.sleep(500);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//            // 开启预览
+//            startPreview(mCamView);
+//        }).start();
+        Runnable runnable = () -> {
             // 休眠500ms，等待Camera创建完毕
             try {
                 Thread.sleep(500);
@@ -188,7 +217,8 @@ public class UVCCameraHelper {
             }
             // 开启预览
             startPreview(mCamView);
-        }).start();
+        };
+        threadPoolExecutor.execute(runnable);
     }
 
     public void registerUSB() {
