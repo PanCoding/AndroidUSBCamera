@@ -1,28 +1,33 @@
 package com.jiangdg.usbcamera.view;
 
 import android.hardware.usb.UsbDevice;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.Toast;
-
 import com.jiangdg.usbcamera.R;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+
 import com.jiangdg.usbcamera.UVCCameraHelper;
+import com.jiangdg.usbcamera.application.MyApplication;
 import com.jiangdg.usbcamera.utils.FileUtils;
-import com.jiangdg.usbcamera.utils.MyThreadFactory;
 import com.serenegiant.usb.CameraDialog;
 import com.serenegiant.usb.Size;
 import com.serenegiant.usb.USBMonitor;
@@ -30,11 +35,9 @@ import com.serenegiant.usb.common.AbstractUVCCameraHandler;
 import com.serenegiant.usb.encoder.RecordParams;
 import com.serenegiant.usb.widget.CameraViewInterface;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -42,15 +45,11 @@ import butterknife.ButterKnife;
 /**
  * UVCCamera use demo
  * <p>
- *
- * @author jiangdongguo
- * @date 2017/9/30
+ * Created by jiangdongguo on 2017/9/30.
  */
 
 public class USBCameraActivity extends AppCompatActivity implements CameraDialog.CameraDialogParent, CameraViewInterface.Callback {
-
-    private static final String TAG = USBCameraActivity.class.getSimpleName();
-
+    private static final String TAG = "Debug";
     @BindView(R.id.camera_view)
     public View mTextureView;
     @BindView(R.id.toolbar)
@@ -68,17 +67,11 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
 
     private boolean isRequest;
     private boolean isPreview;
-    private MyThreadFactory myThreadFactory = new MyThreadFactory(TAG);
-    private ThreadPoolExecutor mThreadPoolExecutor = new ThreadPoolExecutor(1, 1, 2, TimeUnit.SECONDS, new LinkedBlockingDeque<>(), myThreadFactory);
 
     private UVCCameraHelper.OnMyDevConnectListener listener = new UVCCameraHelper.OnMyDevConnectListener() {
 
         @Override
         public void onAttachDev(UsbDevice device) {
-            if (mCameraHelper == null || mCameraHelper.getUsbDeviceCount() == 0) {
-                showShortMsg("check no usb camera");
-                return;
-            }
             // request open permission
             if (!isRequest) {
                 isRequest = true;
@@ -108,34 +101,22 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                 showShortMsg("connecting");
                 // initialize seekbar
                 // need to wait UVCCamera initialize over
-//                new Thread(() -> {
-//                    try {
-//                        Thread.sleep(2500);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                    Looper.prepare();
-//                    if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
-//                        mSeekBrightness.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_BRIGHTNESS));
-//                        mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
-//                    }
-//                    Looper.loop();
-//                }).start();
-                Runnable runnable = () -> {
-                    try {
-                        Thread.sleep(2500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Thread.sleep(2500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        Looper.prepare();
+                        if(mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+                            mSeekBrightness.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_BRIGHTNESS));
+                            mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
+                        }
+                        Looper.loop();
                     }
-                    Looper.prepare();
-                    if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
-                        mSeekBrightness.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_BRIGHTNESS));
-                        mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
-                    }
-                    Looper.loop();
-                };
-                mThreadPoolExecutor.execute(runnable);
-
+                }).start();
             }
         }
 
@@ -156,11 +137,14 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mUVCCameraView = (CameraViewInterface) mTextureView;
         mUVCCameraView.setCallback(this);
         mCameraHelper = UVCCameraHelper.getInstance();
-        mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_YUYV);
+        mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_MJPEG);
         mCameraHelper.initUSBMonitor(this, mUVCCameraView, listener);
 
-        mCameraHelper.setOnPreviewFrameListener(nv21Yuv -> {
-
+        mCameraHelper.setOnPreviewFrameListener(new AbstractUVCCameraHandler.OnPreViewResultListener() {
+            @Override
+            public void onPreviewResult(byte[] nv21Yuv) {
+                Log.d(TAG, "onPreviewResult: "+nv21Yuv.length);
+            }
         });
     }
 
@@ -171,8 +155,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mSeekBrightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
-                    mCameraHelper.setModelValue(UVCCameraHelper.MODE_BRIGHTNESS, progress);
+                if(mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+                    mCameraHelper.setModelValue(UVCCameraHelper.MODE_BRIGHTNESS,progress);
                 }
             }
 
@@ -190,8 +174,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mSeekContrast.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (mCameraHelper != null && mCameraHelper.isCameraOpened()) {
-                    mCameraHelper.setModelValue(UVCCameraHelper.MODE_CONTRAST, progress);
+                if(mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+                    mCameraHelper.setModelValue(UVCCameraHelper.MODE_CONTRAST,progress);
                 }
             }
 
@@ -239,9 +223,23 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                     showShortMsg("sorry,camera open failed");
                     return super.onOptionsItemSelected(item);
                 }
-                String picPath = UVCCameraHelper.ROOT_PATH + System.currentTimeMillis()
-                        + UVCCameraHelper.SUFFIX_JPEG;
-                mCameraHelper.capturePicture(picPath, path -> Log.i(TAG, "save path：" + path));
+                String picPath = UVCCameraHelper.ROOT_PATH + MyApplication.DIRECTORY_NAME +"/images/"
+                        + System.currentTimeMillis() + UVCCameraHelper.SUFFIX_JPEG;
+
+                mCameraHelper.capturePicture(picPath, new AbstractUVCCameraHandler.OnCaptureListener() {
+                    @Override
+                    public void onCaptureResult(String path) {
+                        if(TextUtils.isEmpty(path)) {
+                            return;
+                        }
+                        new Handler(getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(USBCameraActivity.this, "save path:"+path, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                });
 
                 break;
             case R.id.menu_recording:
@@ -250,15 +248,17 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                     return super.onOptionsItemSelected(item);
                 }
                 if (!mCameraHelper.isPushing()) {
-                    String videoPath = UVCCameraHelper.ROOT_PATH + System.currentTimeMillis();
-                    FileUtils.createFile(FileUtils.ROOT_PATH + "test666.h264");
+                    String videoPath = UVCCameraHelper.ROOT_PATH + MyApplication.DIRECTORY_NAME +"/videos/" + System.currentTimeMillis()
+                            + UVCCameraHelper.SUFFIX_MP4;
+
+//                    FileUtils.createfile(FileUtils.ROOT_PATH + "test666.h264");
                     // if you want to record,please create RecordParams like this
                     RecordParams params = new RecordParams();
                     params.setRecordPath(videoPath);
-                    // 设置为0，不分割保存
-                    params.setRecordDuration(0);
-                    // is close voice
-                    params.setVoiceClose(mSwitchVoice.isChecked());
+                    params.setRecordDuration(0);                        // auto divide saved,default 0 means not divided
+                    params.setVoiceClose(mSwitchVoice.isChecked());    // is close voice
+
+                    params.setSupportOverlay(true); // overlay only support armeabi-v7a & arm64-v8a
                     mCameraHelper.startPusher(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
                         @Override
                         public void onEncodeResult(byte[] data, int offset, int length, long timestamp, int type) {
@@ -267,14 +267,17 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                                 FileUtils.putFileStream(data, offset, length);
                             }
                             // type = 0,aac audio stream
-                            if (type == 0) {
+                            if(type == 0) {
 
                             }
                         }
 
                         @Override
                         public void onRecordResult(String videoPath) {
-                            Log.i(TAG, "videoPath = " + videoPath);
+                            if(TextUtils.isEmpty(videoPath)) {
+                                return;
+                            }
+                            new Handler(getMainLooper()).post(() -> Toast.makeText(USBCameraActivity.this, "save videoPath:"+videoPath, Toast.LENGTH_SHORT).show());
                         }
                     });
                     // if you only want to push stream,please call like this
@@ -302,8 +305,6 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                 }
                 mCameraHelper.startCameraFoucs();
                 break;
-            default:
-                break;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -316,18 +317,20 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         if (adapter != null) {
             listView.setAdapter(adapter);
         }
-        listView.setOnItemClickListener((adapterView, view, position, id) -> {
-            if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
-                return;
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                if (mCameraHelper == null || !mCameraHelper.isCameraOpened())
+                    return;
+                final String resolution = (String) adapterView.getItemAtPosition(position);
+                String[] tmp = resolution.split("x");
+                if (tmp != null && tmp.length >= 2) {
+                    int widht = Integer.valueOf(tmp[0]);
+                    int height = Integer.valueOf(tmp[1]);
+                    mCameraHelper.updateResolution(widht, height);
+                }
+                mDialog.dismiss();
             }
-            final String resolution = (String) adapterView.getItemAtPosition(position);
-            String[] tmp = resolution.split("x");
-            if (tmp != null && tmp.length >= 2) {
-                int widht = Integer.valueOf(tmp[0]);
-                int height = Integer.valueOf(tmp[1]);
-                mCameraHelper.updateResolution(widht, height);
-            }
-            mDialog.dismiss();
         });
 
         builder.setView(rootView);
@@ -335,10 +338,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mDialog.show();
     }
 
-    /**
-     * 获取摄像头支持分辨率列表
-     * example: {640x480,320x240,etc}
-     */
+    // example: {640x480,320x240,etc}
     private List<String> getResolutionList() {
         List<Size> list = mCameraHelper.getSupportedPreviewSizes();
         List<String> resolutions = null;

@@ -20,7 +20,6 @@ import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
-import com.jiangdg.usbcamera.utils.MyThreadFactory;
 import com.serenegiant.usb.IFrameCallback;
 import com.serenegiant.usb.Size;
 import com.serenegiant.usb.USBMonitor;
@@ -36,6 +35,8 @@ import com.serenegiant.usb.encoder.biz.H264EncodeConsumer;
 import com.serenegiant.usb.encoder.biz.Mp4MediaMuxer;
 import com.serenegiant.usb.widget.CameraViewInterface;
 
+import org.easydarwin.sw.TxtOverlay;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -46,28 +47,24 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Camera业务处理抽象类
  */
 public abstract class AbstractUVCCameraHandler extends Handler {
 
+    private static final boolean DEBUG = true;    // TODO set false on release
     private static final String TAG = "AbsUVCCameraHandler";
 
-    private static ThreadFactory threadFactory = new MyThreadFactory(TAG);
-    private static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(2, 2, 1, TimeUnit.SECONDS,
-            new LinkedBlockingDeque<>(), threadFactory);
 
-    /**
-     * 对外回调接口
-     */
+    // 对外回调接口
     public interface CameraCallback {
         public void onOpen();
 
@@ -149,6 +146,11 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         return thread != null && thread.isRecording();
     }
 
+//	public boolean isAudioThreadStart() {
+//		final CameraThread thread = mWeakThread.get();
+//		return thread != null && thread.isAudioRecording();
+//	}
+
     public boolean isEqual(final UsbDevice device) {
         final CameraThread thread = mWeakThread.get();
         return (thread != null) && thread.isEqual(device);
@@ -176,10 +178,12 @@ public abstract class AbstractUVCCameraHandler extends Handler {
     }
 
     public void close() {
+        if (DEBUG) Log.v(TAG, "close:");
         if (isOpened()) {
             stopPreview();
             sendEmptyMessage(MSG_CLOSE);
         }
+        if (DEBUG) Log.v(TAG, "close:finished");
     }
 
     // 切换分辨率
@@ -188,9 +192,7 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         throw new UnsupportedOperationException("does not support now");
     }
 
-    /**
-     * 开启Camera预览
-     */
+    // 开启Camera预览
     public void startPreview(final Object surface) {
         checkReleased();
         if (!((surface instanceof SurfaceHolder) || (surface instanceof Surface) || (surface instanceof SurfaceTexture))) {
@@ -206,15 +208,14 @@ public abstract class AbstractUVCCameraHandler extends Handler {
 
     // 关闭Camera预览
     public void stopPreview() {
+        if (DEBUG) Log.v(TAG, "stopPreview:");
         removeMessages(MSG_PREVIEW_START);
         if (isRecording()) {
             stopRecording();
         }
         if (isPreviewing()) {
             final CameraThread thread = mWeakThread.get();
-            if (thread == null) {
-                return;
-            }
+            if (thread == null) return;
             synchronized (thread.mSync) {
                 sendEmptyMessage(MSG_PREVIEW_STOP);
                 if (!isCameraThread()) {
@@ -228,6 +229,7 @@ public abstract class AbstractUVCCameraHandler extends Handler {
                 }
             }
         }
+        if (DEBUG) Log.v(TAG, "stopPreview:finished");
     }
 
     public void captureStill(final String path, AbstractUVCCameraHandler.OnCaptureListener listener) {
@@ -312,8 +314,6 @@ public abstract class AbstractUVCCameraHandler extends Handler {
                 return camera.getBrightness();
             } else if (flag == UVCCamera.PU_CONTRAST) {
                 return camera.getContrast();
-            } else if (flag == UVCCamera.PU_SATURATION) {
-                return camera.getSaturation();
             }
         }
         throw new IllegalStateException();
@@ -330,9 +330,6 @@ public abstract class AbstractUVCCameraHandler extends Handler {
             } else if (flag == UVCCamera.PU_CONTRAST) {
                 camera.setContrast(value);
                 return camera.getContrast();
-            } else if (flag == UVCCamera.PU_SATURATION) {
-                camera.setSaturation(value);
-                return camera.getSaturation();
             }
         }
         throw new IllegalStateException();
@@ -349,9 +346,6 @@ public abstract class AbstractUVCCameraHandler extends Handler {
             } else if (flag == UVCCamera.PU_CONTRAST) {
                 camera.resetContrast();
                 return camera.getContrast();
-            } else if (flag == UVCCamera.PU_SATURATION) {
-                camera.resetSaturation();
-                return camera.getSaturation();
             }
         }
         throw new IllegalStateException();
@@ -360,9 +354,7 @@ public abstract class AbstractUVCCameraHandler extends Handler {
     @Override
     public void handleMessage(final Message msg) {
         final CameraThread thread = mWeakThread.get();
-        if (thread == null) {
-            return;
-        }
+        if (thread == null) return;
         switch (msg.what) {
             case MSG_OPEN:
                 thread.handleOpen((USBMonitor.UsbControlBlock) msg.obj);
@@ -427,6 +419,8 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         private Mp4MediaMuxer mMuxer;
         private boolean isPushing;
         private String videoPath;
+        private boolean isSupportOverlay;
+//		private boolean isAudioThreadStart;
 
         /**
          * 构造方法
@@ -454,6 +448,7 @@ public abstract class AbstractUVCCameraHandler extends Handler {
             mBandwidthFactor = bandwidthFactor;
             mWeakParent = new WeakReference<>(parent);
             mWeakCameraView = new WeakReference<>(cameraView);
+//			loadShutterSound(parent);
         }
 
         @Override
@@ -463,13 +458,13 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         }
 
         public AbstractUVCCameraHandler getHandler() {
+            if (DEBUG) Log.v(TAG_THREAD, "getHandler:");
             synchronized (mSync) {
-                if (mHandler == null) {
+                if (mHandler == null)
                     try {
                         mSync.wait();
                     } catch (final InterruptedException e) {
                     }
-                }
             }
             return mHandler;
         }
@@ -515,6 +510,7 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         }
 
         public void handleOpen(final USBMonitor.UsbControlBlock ctrlBlock) {
+            if (DEBUG) Log.v(TAG_THREAD, "handleOpen:");
             handleClose();
             try {
                 final UVCCamera camera = new UVCCamera();
@@ -526,9 +522,12 @@ public abstract class AbstractUVCCameraHandler extends Handler {
             } catch (final Exception e) {
                 callOnError(e);
             }
+            if (DEBUG)
+                Log.i(TAG, "supportedSize:" + (mUVCCamera != null ? mUVCCamera.getSupportedSize() : null));
         }
 
         public void handleClose() {
+            if (DEBUG) Log.v(TAG_THREAD, "handleClose:");
             handleStopPusher();
             final UVCCamera camera;
             synchronized (mSync) {
@@ -543,9 +542,8 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         }
 
         public void handleStartPreview(final Object surface) {
-            if ((mUVCCamera == null) || mIsPreviewing) {
-                return;
-            }
+            if (DEBUG) Log.v(TAG_THREAD, "handleStartPreview:");
+            if ((mUVCCamera == null) || mIsPreviewing) return;
             try {
                 mUVCCamera.setPreviewSize(mWidth, mHeight, 1, 31, mPreviewMode, mBandwidthFactor);
                 // 获取USB Camera预览数据，使用NV21颜色会失真
@@ -578,6 +576,7 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         }
 
         public void handleStopPreview() {
+            if (DEBUG) Log.v(TAG_THREAD, "handleStopPreview:");
             if (mIsPreviewing) {
                 if (mUVCCamera != null) {
                     mUVCCamera.stopPreview();
@@ -589,14 +588,14 @@ public abstract class AbstractUVCCameraHandler extends Handler {
                 }
                 callOnStopPreview();
             }
+            if (DEBUG) Log.v(TAG_THREAD, "handleStopPreview:finished");
         }
 
         // 捕获静态图片
         public void handleCaptureStill(final String path) {
+            if (DEBUG) Log.v(TAG_THREAD, "handleCaptureStill:");
             final Activity parent = mWeakParent.get();
-            if (parent == null) {
-                return;
-            }
+            if (parent == null) return;
 //			mSoundPool.play(mSoundId, 0.2f, 0.2f, 0, 0, 1.0f);	// play shutter sound
             try {
                 final Bitmap bitmap = mWeakCameraView.get().captureStillImage(mWidth, mHeight);
@@ -671,14 +670,23 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         private H264EncodeConsumer mH264Consumer;
 
         public void handleStartPusher(RecordParams params) {
-            if ((mUVCCamera == null) || (mH264Consumer != null)) {
+            if ((mUVCCamera == null) || (mH264Consumer != null))
                 return;
-            }
 //			// 获取USB Camera预览数据
 //			mUVCCamera.setFrameCallback(mIFrameCallback, UVCCamera.PIXEL_FORMAT_NV21);
+
             // 初始化混合器
             if (params != null) {
+                isSupportOverlay = params.isSupportOverlay();
+                if(isSupportOverlay) {
+                    // init overlay engine
+                    TxtOverlay.getInstance().init(mWidth, mHeight);
+                }
                 videoPath = params.getRecordPath();
+                File file = new File(videoPath);
+                if(! Objects.requireNonNull(file.getParentFile()).exists()) {
+                    file.getParentFile().mkdirs();
+                }
                 mMuxer = new Mp4MediaMuxer(params.getRecordPath(),
                         params.getRecordDuration() * 60 * 1000, params.isVoiceClose());
             }
@@ -702,6 +710,8 @@ public abstract class AbstractUVCCameraHandler extends Handler {
             // 停止音视频编码线程
             stopAudioRecord();
             stopVideoRecord();
+            if(isSupportOverlay)
+                TxtOverlay.getInstance().release();
 //			// 停止捕获视频数据
 //			if (mUVCCamera != null) {
 //				mUVCCamera.stopCapture();
@@ -813,28 +823,23 @@ public abstract class AbstractUVCCameraHandler extends Handler {
                 if (mPreviewListener != null) {
                     mPreviewListener.onPreviewResult(yuv);
                 }
-                // 捕获图片
+                // picture
                 if (isCaptureStill && !TextUtils.isEmpty(picPath)) {
                     isCaptureStill = false;
-//                    new Thread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            saveYuv2Jpeg(picPath, yuv);
-//                        }
-//                    }).start();
-                    Runnable runnable = new Runnable() {
+                    new Thread(new Runnable() {
                         @Override
                         public void run() {
                             saveYuv2Jpeg(picPath, yuv);
                         }
-                    };
-                    threadPoolExecutor.execute(runnable);
-
-                    isCaptureStill = false;
+                    }).start();
                 }
-                // 视频
+                // video
                 if (mH264Consumer != null) {
-                    // 修改分辨率参数
+                    // overlay
+                    if(isSupportOverlay) {
+                        TxtOverlay.getInstance().overlay(yuv, new SimpleDateFormat("yyyy-MM-dd EEEE HH:mm:ss").format(new Date()));
+                    }
+
                     mH264Consumer.setRawYuv(yuv, mWidth, mHeight);
                 }
             }
@@ -845,26 +850,22 @@ public abstract class AbstractUVCCameraHandler extends Handler {
             ByteArrayOutputStream bos = new ByteArrayOutputStream(data.length);
             boolean result = yuvImage.compressToJpeg(new Rect(0, 0, mWidth, mHeight), 100, bos);
             if (result) {
-                byte[] buffer = bos.toByteArray();
-                Bitmap bmp = BitmapFactory.decodeByteArray(buffer, 0, buffer.length);
 
+                byte[] buffer = bos.toByteArray();
                 File file = new File(path);
                 FileOutputStream fos = null;
                 try {
                     fos = new FileOutputStream(file);
+                    // fixing bm is null bug instead of using BitmapFactory.decodeByteArray
+                    fos.write(buffer);
+                    fos.close();
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
-                }
-                bmp.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-                try {
-                    fos.flush();
-                    fos.close();
-                    bmp.recycle();
-                    if (mCaptureListener != null) {
-                        mCaptureListener.onCaptureResult(path);
-                    }
                 } catch (IOException e) {
                     e.printStackTrace();
+                }
+                if (mCaptureListener != null) {
+                    mCaptureListener.onCaptureResult(path);
                 }
             }
             try {
@@ -876,17 +877,18 @@ public abstract class AbstractUVCCameraHandler extends Handler {
 
         @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
         public void handleUpdateMedia(final String path) {
+            if (DEBUG) Log.v(TAG_THREAD, "handleUpdateMedia:path=" + path);
             final Activity parent = mWeakParent.get();
             final boolean released = (mHandler == null) || mHandler.mReleased;
             if (parent != null && parent.getApplicationContext() != null) {
                 try {
+                    if (DEBUG) Log.i(TAG, "MediaScannerConnection#scanFile");
                     MediaScannerConnection.scanFile(parent.getApplicationContext(), new String[]{path}, null, null);
                 } catch (final Exception e) {
                     Log.e(TAG, "handleUpdateMedia:", e);
                 }
-                if (released || parent.isDestroyed()) {
+                if (released || parent.isDestroyed())
                     handleRelease();
-                }
             } else {
                 Log.w(TAG, "MainActivity already destroyed");
                 // give up to add this movie to MediaStore now.
@@ -896,56 +898,57 @@ public abstract class AbstractUVCCameraHandler extends Handler {
         }
 
         public void handleRelease() {
+            if (DEBUG) Log.v(TAG_THREAD, "handleRelease:mIsRecording=" + mIsRecording);
             handleClose();
             mCallbacks.clear();
             if (!mIsRecording) {
                 mHandler.mReleased = true;
                 Looper.myLooper().quit();
             }
+            if (DEBUG) Log.v(TAG_THREAD, "handleRelease:finished");
         }
 
         // 自动对焦
         public void handleCameraFoucs() {
-            if ((mUVCCamera == null) || !mIsPreviewing) {
+            if (DEBUG) Log.v(TAG_THREAD, "handleStartPreview:");
+            if ((mUVCCamera == null) || !mIsPreviewing)
                 return;
-            }
             mUVCCamera.setAutoFocus(true);
         }
 
         // 获取支持的分辨率
         public List<Size> getSupportedSizes() {
-            if ((mUVCCamera == null)) {
+            if ((mUVCCamera == null) || !mIsPreviewing)
                 return null;
-            }
             return mUVCCamera.getSupportedSizeList();
         }
 
         private final MediaEncoder.MediaEncoderListener mMediaEncoderListener = new MediaEncoder.MediaEncoderListener() {
             @Override
             public void onPrepared(final MediaEncoder encoder) {
+                if (DEBUG) Log.v(TAG, "onPrepared:encoder=" + encoder);
                 mIsRecording = true;
-                if (encoder instanceof MediaVideoEncoder) {
+                if (encoder instanceof MediaVideoEncoder)
                     try {
                         mWeakCameraView.get().setVideoEncoder((MediaVideoEncoder) encoder);
                     } catch (final Exception e) {
                         Log.e(TAG, "onPrepared:", e);
                     }
-                }
-                if (encoder instanceof MediaSurfaceEncoder) {
+                if (encoder instanceof MediaSurfaceEncoder)
                     try {
                         mWeakCameraView.get().setVideoEncoder((MediaSurfaceEncoder) encoder);
                         mUVCCamera.startCapture(((MediaSurfaceEncoder) encoder).getInputSurface());
                     } catch (final Exception e) {
                         Log.e(TAG, "onPrepared:", e);
                     }
-                }
             }
 
             @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
             @Override
             public void onStopped(final MediaEncoder encoder) {
+                if (DEBUG) Log.v(TAG_THREAD, "onStopped:encoder=" + encoder);
                 if ((encoder instanceof MediaVideoEncoder)
-                        || (encoder instanceof MediaSurfaceEncoder)) {
+                        || (encoder instanceof MediaSurfaceEncoder))
                     try {
                         mIsRecording = false;
                         final Activity parent = mWeakParent.get();
@@ -967,7 +970,6 @@ public abstract class AbstractUVCCameraHandler extends Handler {
                     } catch (final Exception e) {
                         Log.e(TAG, "onPrepared:", e);
                     }
-                }
             }
 
             @Override

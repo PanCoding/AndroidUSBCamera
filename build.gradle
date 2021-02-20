@@ -5,8 +5,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        // gradle插件版本
-        classpath 'com.android.tools.build:gradle:3.3.2'
+        classpath 'com.android.tools.build:gradle:3.5.2'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
     }
 }
@@ -24,8 +23,16 @@ task clean(type: Delete) {
 }
 
 ext {
-    supportLibVersion = '27.1.1'  // variable that can be referenced to keep support libs consistent
-    commonLibVersion = '2.12.4'
-    versionCode = 1
-    versionName = '0.0.2.1-SNAPSHOT'
+    androidXVersion = '1.1.0'  // variable that can be referenced to keep support libs consistent
+    commonLibVersion= '4.1.1'
+    versionCompiler = 28
+    // when target=27, 9.0 is ok
+    versionTarget = 27
+    // if hope supporting 4.4
+    // please modify it to 16
+    minSdkVersion = 21
+    versionCode = 99
+    versionNameString = '1.2.1.20200414'
+    javaSourceCompatibility = JavaVersion.VERSION_1_8
+    javaTargetCompatibility = JavaVersion.VERSION_1_8
 }

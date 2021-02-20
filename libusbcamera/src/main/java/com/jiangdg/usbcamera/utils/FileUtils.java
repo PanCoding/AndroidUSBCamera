@@ -8,32 +8,30 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
- * 创建文件
  *
- * @author jiangdongguo
- * @date 2017/10/18
+ * Created by jiangdongguo on 2017/10/18.
  */
 
 public class FileUtils {
 
     private static BufferedOutputStream outputStream;
-    public static String ROOT_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator;
+    public static String ROOT_PATH = Environment.getExternalStorageDirectory().getAbsolutePath()+File.separator;
 
-    public static void createFile(String path) {
+    public static void createfile(String path){
         File file = new File(path);
-        if (file.exists()) {
+        if(file.exists()){
             file.delete();
         }
         try {
             outputStream = new BufferedOutputStream(new FileOutputStream(file));
-        } catch (Exception e) {
+        } catch (Exception e){
             e.printStackTrace();
         }
     }
 
-    public static void releaseFile() {
+    public static void releaseFile(){
         try {
-            if (outputStream != null) {
+            if(outputStream != null) {
                 outputStream.flush();
                 outputStream.close();
             }
@@ -42,18 +40,18 @@ public class FileUtils {
         }
     }
 
-    public static void putFileStream(byte[] data, int offset, int length) {
-        if (outputStream != null) {
+    public static void putFileStream(byte[] data,int offset,int length){
+        if(outputStream != null) {
             try {
-                outputStream.write(data, offset, length);
+                outputStream.write(data,offset,length);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public static void putFileStream(byte[] data) {
-        if (outputStream != null) {
+    public static void putFileStream(byte[] data){
+        if(outputStream != null) {
             try {
                 outputStream.write(data);
             } catch (IOException e) {

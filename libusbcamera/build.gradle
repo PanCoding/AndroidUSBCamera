@@ -1,19 +1,19 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
-apply plugin: 'maven'
+apply plugin: 'com.github.dcendents.android-maven'
+group='com.github.jiangdongguo'
 
 android {
-    compileSdkVersion 27
-
+    compileSdkVersion rootProject.ext.versionCompiler
     defaultConfig {
-        minSdkVersion 18
-        targetSdkVersion 27
-        versionCode rootProject.versionCode
-        versionName rootProject.versionName
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.versionTarget
+        versionCode 2
+        versionName rootProject.ext.versionNameString
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // "armeabi-v7a" can adapter most of the devices
         ndk {
-            // 设置支持的SO库架构
-            abiFilters 'armeabi' //, 'x86', 'armeabi-v7a', 'x86_64', 'arm64-v8a'
+            abiFilters "armeabi-v7a"
         }
     }
     buildTypes {
@@ -22,46 +22,17 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
+    // solving com.android.tools.r8.CompilationFailedException: Compilation failed to complete
     compileOptions {
-        sourceCompatibility 1.8
-        targetCompatibility 1.8
+        sourceCompatibility rootProject.ext.javaSourceCompatibility
+        targetCompatibility rootProject.ext.javaTargetCompatibility
     }
 }
+
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestImplementation('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
-    implementation "com.android.support:appcompat-v7:$rootProject.supportLibVersion"
-    testImplementation 'junit:junit:4.12'
-    api("com.serenegiant:common:$rootProject.commonLibVersion") {
-        exclude module: 'support-v4'
-    }
-}
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-def MAVEN_LOCAL_PATH = 'http://101.132.126.255:8081/repository/gdt/'
-def ARTIFACT_ID = 'gdt-otg-base'
-def VERSION_NAME = rootProject.versionName
-def GROUP_ID = 'gdt'
-def ACCOUNT = 'dev'
-def PASSWORD = 'N&wmAnA18MXEQF0ICCv8*RpZJaLieEnW'
-
-//脚本：将Lib打成aar包上传至maven私有库
-// 命令：gradlew uploadArchives
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(url: MAVEN_LOCAL_PATH) {
-                authentication(userName: ACCOUNT, password: PASSWORD)
-            }
-            pom.project {
-                groupId GROUP_ID
-                artifactId ARTIFACT_ID
-                version VERSION_NAME
-                packaging 'aar'
-            }
-        }
-    }
+    implementation "androidx.appcompat:appcompat:${androidXVersion}"
+    api "com.serenegiant:common:${commonLibVersion}"
 }

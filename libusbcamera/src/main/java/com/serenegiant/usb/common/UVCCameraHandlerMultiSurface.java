@@ -30,6 +30,8 @@ import com.serenegiant.glutils.RendererHolder;
 import com.serenegiant.usb.UVCCamera;
 import com.serenegiant.usb.widget.CameraViewInterface;
 
+import java.io.FileNotFoundException;
+
 public class UVCCameraHandlerMultiSurface extends AbstractUVCCameraHandler {
 	/**
 	 * create UVCCameraHandlerMultiSurface, use MediaVideoEncoder, try MJPEG, default bandwidth
@@ -121,7 +123,6 @@ public class UVCCameraHandlerMultiSurface extends AbstractUVCCameraHandler {
 		mRendererHolder = new RendererHolder(thread.getWidth(), thread.getHeight(), null);
 	}
 
-	@Override
 	public synchronized void release() {
 		if (mRendererHolder != null) {
 			mRendererHolder.release();
@@ -130,7 +131,6 @@ public class UVCCameraHandlerMultiSurface extends AbstractUVCCameraHandler {
 		super.release();
 	}
 
-	@Override
 	public synchronized void resize(final int width, final int height) {
 		super.resize(width, height);
 		if (mRendererHolder != null) {
@@ -158,14 +158,27 @@ public class UVCCameraHandlerMultiSurface extends AbstractUVCCameraHandler {
 		}
 	}
 
+//	@Override
+//	public void captureStill() {
+//		checkReleased();
+//		super.captureStill();
+//	}
+
 	@Override
 	public void captureStill(final String path,OnCaptureListener listener) {
 		checkReleased();
-		post(() -> {
-			synchronized (UVCCameraHandlerMultiSurface.this) {
-				if (mRendererHolder != null) {
-					mRendererHolder.captureStill(path);
-					updateMedia(path);
+		post(new Runnable() {
+			@Override
+			public void run() {
+				synchronized (UVCCameraHandlerMultiSurface.this) {
+					if (mRendererHolder != null) {
+						try {
+							mRendererHolder.captureStill(path);
+							updateMedia(path);
+						} catch (FileNotFoundException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 		});

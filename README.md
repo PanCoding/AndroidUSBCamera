@@ -1,8 +1,14 @@
 AndroidUSBCamera
 ============   
-AndroidUSBCamera is developed based on the [saki4510t/UVCCamera](https://github.com/saki4510t/UVCCamera), the project of USB Camera (UVC equipment) and the use of video data acquisition are highly packaged, and it can help developers using USB Camera devices easily by a few simple APIs. By using AndroidUSBCamera,you can detect and connect to a USB Camera simply.And you also can use it to realize taking picture,recording mp4,switching resolutions ,getting h.264/aac/yuv(nv21) stream and setting  camera's contrast or brightness,supporting 480P、720P、1080P and higher,etc.
+AndroidUSBCamera is developed based on the [saki4510t/UVCCamera](https://github.com/saki4510t/UVCCamera), the project of USB Camera (UVC equipment) and the use of video data acquisition are highly packaged, and it can help developers using USB Camera devices easily by a few simple APIs. By using AndroidUSBCamera,you can detect and connect to a USB Camera simply.And you also can use it to realize taking picture,recording mp4,switching resolutions ,getting h.264/aac/yuv(nv21) stream and setting  camera's contrast or brightness,supporting 480P、720P、1080P and higher,etc.supporting overlay and record device's mic.   
+
+Supporting Android 5.0,6.0,7.0,8.0,9.0,10.0
 
 [中文文档： AndroidUSBCamera，UVCCamera开发通用库](http://blog.csdn.net/andrexpert/article/details/78324181)  
+
+- JNI Source Download: 
+
+[JNI CODE--->password：vpoj](https://pan.baidu.com/s/11OBLCY4VjYYUZGEPcQ1ScA)
 
 Usage
 -------
@@ -21,7 +27,7 @@ allprojects {
 Step 2. Add the dependency  
 ```java
 dependencies {
-	       implementation 'com.github.jiangdongguo:AndroidUSBCamera:2.2.8'
+	implementation 'com.github.jiangdongguo:AndroidUSBCamera:2.3.4'
 }
 ```
 ### 2. APIs Introduction  
@@ -113,6 +119,7 @@ RecordParams params = new RecordParams();
                     params.setRecordPath(videoPath);
                     params.setRecordDuration(0);                        // 0,do not cut save
                     params.setVoiceClose(mSwitchVoice.isChecked());    // is close voice
+		    params.setSupportOverlay(true); // overlay only support armeabi-v7a & arm64-v8a
                     mCameraHelper.startPusher(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
                         @Override
                         public void onEncodeResult(byte[] data, int offset, int length, long timestamp, int type) {
@@ -150,10 +157,70 @@ mCameraHelper.updateResolution(widht, height);
 ```
 ![Connecting gif](https://github.com/jiangdongguo/AndroidUSBCamera/blob/master/gifs/2.1.0.gif)  
 At last,remember adding permissions:  
-```
+```xml
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
-``` 
+<uses-permission android:name="android.permission.RECORD_AUDIO" />  
+```     
+
+
+### 3. Solving Problems
+
+1. connected,but preview failed
+
+Please checking your preview format and change YUV to MJPEG or MJPEG to YUV,because some usb devices only supporting YUV   
+
+2. never found the device   
+
+- confirm your phone support otg   
+
+- get a file from your sd card named failed-device.txt in the path of root sd card/UsbCamera/failed-device.txt and tell me
+
+- if your device is Android 10(Q),please change your versionTarget to 27 and below, because these is a bug in Android Q SDK.
+
+
+### 4. Updating 
+
+#### 2020.01.15  version 2.3.2  
+
+1. support adding time overlay(attention: overlay only support armeabi-v7a & arm64-v8a);
+2. support recording device mic;
+3. update to androidx and update commonLibVersion from 2.14.2 to 4.1.1;
+4. fix saving files failed.  
+
+#### 2020.04.14  version 2.3.4
+
+1. fix pull version 2.3.2 failed.
+2. fix android 9.0 sometimes can not preview.
+3. fix the exception when pull up the device.
+4. update to all so files to new.
+
+Download APK
+-------  
+  
+&emsp;In order to display the functions, I develop a simple released apk,which is based on version 2.3.1,and the build version is 28.0.3.Here is my configs and if you have any questions please issues to me ,I will follow it do my best.
+```
+ext {
+    androidXVersion = '1.1.0'  // variable that can be referenced to keep support libs consistent
+    commonLibVersion= '4.1.1'
+    versionCompiler = 28
+    versionTarget = 27   // versionTarget>27 android 10 may previewed failed.
+    // if hope supporting 4.4
+    // please modify it to 16
+    minSdkVersion = 21
+    versionNameString = '1.2.1.20200414'
+    javaSourceCompatibility = JavaVersion.VERSION_1_8
+    javaTargetCompatibility = JavaVersion.VERSION_1_8
+}
+```   
+download way:  
+
+![download](https://github.com/jiangdongguo/AndroidUSBCamera/blob/master/gifs/app_download.png)  
+
+displaying:  
+
+![download](https://github.com/jiangdongguo/AndroidUSBCamera/blob/master/gifs/USBCam.gif)  
+
+
 Other Library about Android Camera
 -------
 [OkCamera](https://github.com/jiangdongguo/OkCamera) Android Camera univsersally operation.  
@@ -164,7 +231,7 @@ Other Library about Android Camera
 License
 -------
 
-    Copyright 2018 Jiangdongguo
+    Copyright 2020 Jiangdongguo
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
